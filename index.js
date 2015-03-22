@@ -1,19 +1,28 @@
 'use strict';
 
-// Utility functions for parsing and handling shortcodes in JavaScript.
+/**
+ * Utility functions for parsing and handling shortcodes in JavaScript.
+ */
 
 // Ensure the global `wp` object exists.
 var wp = {};
 var _ = require('lodash');
 
 wp.shortcode = {
-  // ### Find the next matching shortcode
-  //
-  // Given a shortcode `tag`, a block of `text`, and an optional starting
-  // `index`, returns the next matching shortcode or `undefined`.
-  //
-  // Shortcodes are formatted as an object that contains the match
-  // `content`, the matching `index`, and the parsed `shortcode` object.
+  /**
+   * Find the next matching shortcode
+   *
+   * Given a shortcode `tag`, a block of `text`, and an optional starting
+   * `index`, returns the next matching shortcode or `undefined`.
+   *
+   * Shortcodes are formatted as an object that contains the match
+   * `content`, the matching `index`, and the parsed `shortcode` object.
+   *
+   * @param tag
+   * @param text
+   * @param index
+   * @return {*}
+   */
   next: function( tag, text, index ) {
     var re = wp.shortcode.regexp( tag ),
         match, result;
@@ -51,15 +60,22 @@ wp.shortcode = {
     return result;
   },
 
-  // ### Replace matching shortcodes in a block of text
-  //
-  // Accepts a shortcode `tag`, content `text` to scan, and a `callback`
-  // to process the shortcode matches and return a replacement string.
-  // Returns the `text` with all shortcodes replaced.
-  //
-  // Shortcode matches are objects that contain the shortcode `tag`,
-  // a shortcode `attrs` object, the `content` between shortcode tags,
-  // and a boolean flag to indicate if the match was a `single` tag.
+  /**
+   * Replace matching shortcodes in a block of text
+   *
+   * Accepts a shortcode `tag`, content `text` to scan, and a `callback`
+   * to process the shortcode matches and return a replacement string.
+   * Returns the `text` with all shortcodes replaced.
+   *
+   * Shortcode matches are objects that contain the shortcode `tag`,
+   * a shortcode `attrs` object, the `content` between shortcode tags,
+   * and a boolean flag to indicate if the match was a `single` tag.
+   *
+   * @param tag
+   * @param text
+   * @param callback
+   * @return {*|string}
+   */
   replace: function( tag, text, callback ) {
     return text.replace( wp.shortcode.regexp( tag ), function( match, left, tag, attrs, slash, content, closing, right ) {
       // If both extra brackets exist, the shortcode has been
@@ -77,48 +93,62 @@ wp.shortcode = {
     });
   },
 
-  // ### Generate a string from shortcode parameters
-  //
-  // Creates a `wp.shortcode` instance and returns a string.
-  //
-  // Accepts the same `options` as the `wp.shortcode()` constructor,
-  // containing a `tag` string, a string or object of `attrs`, a boolean
-  // indicating whether to format the shortcode using a `single` tag, and a
-  // `content` string.
+  /**
+   * Generate a string from shortcode parameters
+   *
+   * Creates a `wp.shortcode` instance and returns a string.
+   *
+   * Accepts the same `options` as the `wp.shortcode()` constructor,
+   * containing a `tag` string, a string or object of `attrs`, a boolean
+   * indicating whether to format the shortcode using a `single` tag, and a
+   * `content` string.
+   *
+   * @param options
+   * @return {*}
+   */
   string: function( options ) {
     return new wp.shortcode( options ).string();
   },
 
-  // ### Generate a RegExp to identify a shortcode
-  //
-  // The base regex is functionally equivalent to the one found in
-  // `get_shortcode_regex()` in `wp-includes/shortcodes.php`.
-  //
-  // Capture groups:
-  //
-  // 1. An extra `[` to allow for escaping shortcodes with double `[[]]`
-  // 2. The shortcode name
-  // 3. The shortcode argument list
-  // 4. The self closing `/`
-  // 5. The content of a shortcode when it wraps some content.
-  // 6. The closing tag.
-  // 7. An extra `]` to allow for escaping shortcodes with double `[[]]`
+  /**
+   * Generate a RegExp to identify a shortcode
+   *
+   * The base regex is functionally equivalent to the one found in
+   * `get_shortcode_regex()` in `wp-includes/shortcodes.php`.
+   *
+   * Capture groups:
+   * 1. An extra `[` to allow for escaping shortcodes with double `[[]]`
+   * 2. The shortcode name
+   * 3. The shortcode argument list
+   * 4. The self closing `/`
+   * 5. The content of a shortcode when it wraps some content.
+   * 6. The closing tag.
+   * 7. An extra `]` to allow for escaping shortcodes with double `[[]]`
+   *
+   * @param tag
+   * @return {RegExp}
+   */
   regexp: _.memoize( function( tag ) {
     return new RegExp( '\\[(\\[?)(' + tag + ')(?![\\w-])([^\\]\\/]*(?:\\/(?!\\])[^\\]\\/]*)*?)(?:(\\/)\\]|\\](?:([^\\[]*(?:\\[(?!\\/\\2\\])[^\\[]*)*)(\\[\\/\\2\\]))?)(\\]?)', 'g' );
   }),
 
 
-  // ### Parse shortcode attributes
-  //
-  // Shortcodes accept many types of attributes. These can chiefly be
-  // divided into named and numeric attributes:
-  //
-  // Named attributes are assigned on a key/value basis, while numeric
-  // attributes are treated as an array.
-  //
-  // Named attributes can be formatted as either `name="value"`,
-  // `name='value'`, or `name=value`. Numeric attributes can be formatted
-  // as `"value"` or just `value`.
+  /**
+   * Parse shortcode attributes
+   *
+   * Shortcodes accept many types of attributes. These can chiefly be
+   * divided into named and numeric attributes:
+   *
+   * Named attributes are assigned on a key/value basis, while numeric
+   * attributes are treated as an array.
+   *
+   * Named attributes can be formatted as either `name="value"`,
+   * `name='value'`, or `name=value`. Numeric attributes can be formatted
+   * as `"value"` or just `value`.
+   *
+   * @param text
+   * @return {{named: {}, numeric: Array}}
+   */
   attrs: _.memoize( function( text ) {
     var named   = {},
         numeric = [],
@@ -163,10 +193,16 @@ wp.shortcode = {
     };
   }),
 
-  // ### Generate a Shortcode Object from a RegExp match
-  // Accepts a `match` object from calling `regexp.exec()` on a `RegExp`
-  // generated by `wp.shortcode.regexp()`. `match` can also be set to the
-  // `arguments` from a callback passed to `regexp.replace()`.
+  /**
+   * Generate a Shortcode Object from a RegExp match
+   *
+   * Accepts a `match` object from calling `regexp.exec()` on a `RegExp`
+   * generated by `wp.shortcode.regexp()`. `match` can also be set to the
+   * `arguments` from a callback passed to `regexp.replace()`.
+   *
+   * @param match
+   * @return {wp.shortcode}
+   */
   fromMatch: function( match ) {
     var type;
 
@@ -188,16 +224,21 @@ wp.shortcode = {
 };
 
 
-// Shortcode Objects
-// -----------------
-//
-// Shortcode objects are generated automatically when using the main
-// `wp.shortcode` methods: `next()`, `replace()`, and `string()`.
-//
-// To access a raw representation of a shortcode, pass an `options` object,
-// containing a `tag` string, a string or object of `attrs`, a string
-// indicating the `type` of the shortcode ('single', 'self-closing', or
-// 'closed'), and a `content` string.
+/**
+ * Shortcode Objects
+ *
+ * Shortcode objects are generated automatically when using the main
+ * `wp.shortcode` methods: `next()`, `replace()`, and `string()`.
+ *
+ * To access a raw representation of a shortcode, pass an `options` object,
+ * containing a `tag` string, a string or object of `attrs`, a string
+ * indicating the `type` of the shortcode ('single', 'self-closing', or
+ * 'closed'), and a `content` string.
+ *
+ * @class wp.shortcode
+ * @param options
+ * @return {wp.shortcode}
+ */
 wp.shortcode = _.extend( function( options ) {
   _.extend( this, _.pick( options || {}, 'tag', 'attrs', 'type', 'content' ) );
 
@@ -230,24 +271,39 @@ wp.shortcode = _.extend( function( options ) {
 }, wp.shortcode );
 
 _.extend( wp.shortcode.prototype, {
-  // ### Get a shortcode attribute
-  //
-  // Automatically detects whether `attr` is named or numeric and routes
-  // it accordingly.
+  /**
+   * Get a shortcode attribute
+   *
+   * Automatically detects whether `attr` is named or numeric and routes
+   * it accordingly.
+   *
+   * @param attr
+   * @return {*}
+   */
   get: function( attr ) {
     return this.attrs[ _.isNumber( attr ) ? 'numeric' : 'named' ][ attr ];
   },
 
-  // ### Set a shortcode attribute
-  //
-  // Automatically detects whether `attr` is named or numeric and routes
-  // it accordingly.
+  /**
+   * Set a shortcode attribute
+   *
+   * Automatically detects whether `attr` is named or numeric and routes
+   * it accordingly.
+   *
+   * @param attr
+   * @param value
+   * @return {wp.shortcode}
+   */
   set: function( attr, value ) {
     this.attrs[ _.isNumber( attr ) ? 'numeric' : 'named' ][ attr ] = value;
     return this;
   },
 
-  // ### Transform the shortcode match into a string
+  /**
+   * Transform the shortcode match into a string
+   *
+   * @return {string}
+   */
   string: function() {
     var text    = '[' + this.tag;
 
