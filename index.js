@@ -2,11 +2,15 @@
 
 /**
  * Utility functions for parsing and handling shortcodes in JavaScript.
+ *
+ * TODO: better/cleaner JSdocs
+ * TODO: port PHPUnit tests from wordpress-development
+ * TODO: refactor
  */
 
 // Ensure the global `wp` object exists.
 var wp = {};
-var _ = require('lodash');
+var _ = require('lodash'); // TODO: reduce this dep footprint
 
 wp.shortcode = {
   /**
