@@ -5,7 +5,7 @@
  *
  * TODO: better/cleaner JSdocs
  * TODO: port PHPUnit tests from wordpress-development
- * TODO: refactor
+ * TODO: refactor for clarity. eg: class name, (class | instance) methods
  */
 
 // Ensure the global `wp` object exists.
