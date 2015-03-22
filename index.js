@@ -282,4 +282,4 @@ _.extend( wp.shortcode.prototype, {
     return text + '[/' + this.tag + ']';
   }
 });
-module.export = wp;
+module.export = wp.shortcode;
