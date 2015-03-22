@@ -1,6 +1,6 @@
 {
   "name": "wordpress-shortcode",
-  "version": "0.0.0-alpha",
+  "version": "0.0.0",
   "description": "Utility functions for parsing and handling WordPress shortcodes in JavaScript.",
   "main": "index.js",
   "scripts": {
