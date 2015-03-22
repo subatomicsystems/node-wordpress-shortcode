@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 /**
  * Utility functions for parsing and handling shortcodes in JavaScript.
@@ -9,8 +9,9 @@
  */
 
 // Ensure the global `wp` object exists.
-var wp = {};
-var _ = require('lodash'); // TODO: reduce this dep footprint
+var wp = {}
+var Shortcode = wp.shortcode
+var _ = require('lodash') // TODO: reduce this dep footprint
 
 wp.shortcode = {
   /**
@@ -27,41 +28,42 @@ wp.shortcode = {
    * @param index
    * @return {*}
    */
-  next: function( tag, text, index ) {
-    var re = wp.shortcode.regexp( tag ),
-        match, result;
+  next: function (tag, text, index) {
+    var re = wp.shortcode.regexp(tag)
+    var match
+    var result
 
-    re.lastIndex = index || 0;
-    match = re.exec( text );
+    re.lastIndex = index || 0
+    match = re.exec(text)
 
-    if ( ! match ) {
-      return;
+    if (!match) {
+      return
     }
 
     // If we matched an escaped shortcode, try again.
-    if ( '[' === match[1] && ']' === match[7] ) {
-      return wp.shortcode.next( tag, text, re.lastIndex );
+    if (match[1] === '[' && match[7] === ']') {
+      return wp.shortcode.next(tag, text, re.lastIndex)
     }
 
     result = {
-      index:     match.index,
-      content:   match[0],
-      shortcode: wp.shortcode.fromMatch( match )
-    };
+      index: match.index,
+      content: match[0],
+      shortcode: wp.shortcode.fromMatch(match)
+    }
 
     // If we matched a leading `[`, strip it from the match
     // and increment the index accordingly.
-    if ( match[1] ) {
-      result.content = result.content.slice( 1 );
-      result.index++;
+    if (match[1]) {
+      result.content = result.content.slice(1)
+      result.index++
     }
 
     // If we matched a trailing `]`, strip it from the match.
-    if ( match[7] ) {
-      result.content = result.content.slice( 0, -1 );
+    if (match[7]) {
+      result.content = result.content.slice(0, -1)
     }
 
-    return result;
+    return result
   },
 
   /**
@@ -80,21 +82,21 @@ wp.shortcode = {
    * @param callback
    * @return {*|string}
    */
-  replace: function( tag, text, callback ) {
-    return text.replace( wp.shortcode.regexp( tag ), function( match, left, tag, attrs, slash, content, closing, right ) {
+  replace: function (tag, text, callback) {
+    return text.replace(wp.shortcode.regexp(tag), function (match, left, tag, attrs, slash, content, closing, right) {
       // If both extra brackets exist, the shortcode has been
       // properly escaped.
-      if ( left === '[' && right === ']' ) {
-        return match;
+      if (left === '[' && right === ']') {
+        return match
       }
 
       // Create the match object and pass it through the callback.
-      var result = callback( wp.shortcode.fromMatch( arguments ) );
+      var result = callback(wp.shortcode.fromMatch(arguments))
 
       // Make sure to return any of the extra brackets if they
       // weren't used to escape the shortcode.
-      return result ? left + result + right : match;
-    });
+      return result ? left + result + right : match
+    })
   },
 
   /**
@@ -110,8 +112,8 @@ wp.shortcode = {
    * @param options
    * @return {*}
    */
-  string: function( options ) {
-    return new wp.shortcode( options ).string();
+  string: function (options) {
+    return new Shortcode(options).string()
   },
 
   /**
@@ -132,10 +134,9 @@ wp.shortcode = {
    * @param tag
    * @return {RegExp}
    */
-  regexp: _.memoize( function( tag ) {
-    return new RegExp( '\\[(\\[?)(' + tag + ')(?![\\w-])([^\\]\\/]*(?:\\/(?!\\])[^\\]\\/]*)*?)(?:(\\/)\\]|\\](?:([^\\[]*(?:\\[(?!\\/\\2\\])[^\\[]*)*)(\\[\\/\\2\\]))?)(\\]?)', 'g' );
+  regexp: _.memoize(function (tag) {
+    return new RegExp('\\[(\\[?)(' + tag + ')(?![\\w-])([^\\]\\/]*(?:\\/(?!\\])[^\\]\\/]*)*?)(?:(\\/)\\]|\\](?:([^\\[]*(?:\\[(?!\\/\\2\\])[^\\[]*)*)(\\[\\/\\2\\]))?)(\\]?)', 'g')
   }),
-
 
   /**
    * Parse shortcode attributes
@@ -153,10 +154,11 @@ wp.shortcode = {
    * @param text
    * @return {{named: {}, numeric: Array}}
    */
-  attrs: _.memoize( function( text ) {
-    var named   = {},
-        numeric = [],
-        pattern, match;
+  attrs: _.memoize(function (text) {
+    var named = {}
+    var numeric = []
+    var pattern
+    var match
 
     // This regular expression is reused from `shortcode_parse_atts()`
     // in `wp-includes/shortcodes.php`.
@@ -171,30 +173,30 @@ wp.shortcode = {
     // 6. an unquoted value.
     // 7. A numeric attribute in double quotes.
     // 8. An unquoted numeric attribute.
-    pattern = /(\w+)\s*=\s*"([^"]*)"(?:\s|$)|(\w+)\s*=\s*\'([^\']*)\'(?:\s|$)|(\w+)\s*=\s*([^\s\'"]+)(?:\s|$)|"([^"]*)"(?:\s|$)|(\S+)(?:\s|$)/g;
+    pattern = /(\w+)\s*=\s*"([^"]*)"(?:\s|$)|(\w+)\s*=\s*\'([^\']*)\'(?:\s|$)|(\w+)\s*=\s*([^\s\'"]+)(?:\s|$)|"([^"]*)"(?:\s|$)|(\S+)(?:\s|$)/g
 
     // Map zero-width spaces to actual spaces.
-    text = text.replace( /[\u00a0\u200b]/g, ' ' );
+    text = text.replace(/[\u00a0\u200b]/g, ' ')
 
     // Match and normalize attributes.
-    while ( (match = pattern.exec( text )) ) {
-      if ( match[1] ) {
-        named[ match[1].toLowerCase() ] = match[2];
-      } else if ( match[3] ) {
-        named[ match[3].toLowerCase() ] = match[4];
-      } else if ( match[5] ) {
-        named[ match[5].toLowerCase() ] = match[6];
-      } else if ( match[7] ) {
-        numeric.push( match[7] );
-      } else if ( match[8] ) {
-        numeric.push( match[8] );
+    while ((match = pattern.exec(text))) {
+      if (match[1]) {
+        named[match[1].toLowerCase()] = match[2]
+      } else if (match[3]) {
+        named[match[3].toLowerCase()] = match[4]
+      } else if (match[5]) {
+        named[match[5].toLowerCase()] = match[6]
+      } else if (match[7]) {
+        numeric.push(match[7])
+      } else if (match[8]) {
+        numeric.push(match[8])
       }
     }
 
     return {
-      named:   named,
+      named: named,
       numeric: numeric
-    };
+    }
   }),
 
   /**
@@ -205,28 +207,27 @@ wp.shortcode = {
    * `arguments` from a callback passed to `regexp.replace()`.
    *
    * @param match
-   * @return {wp.shortcode}
+   * @return {Shortcode}
    */
-  fromMatch: function( match ) {
-    var type;
+  fromMatch: function (match) {
+    var type
 
-    if ( match[4] ) {
-      type = 'self-closing';
-    } else if ( match[6] ) {
-      type = 'closed';
+    if (match[4]) {
+      type = 'self-closing'
+    } else if (match[6]) {
+      type = 'closed'
     } else {
-      type = 'single';
+      type = 'single'
     }
 
-    return new wp.shortcode({
-      tag:     match[2],
-      attrs:   match[3],
-      type:    type,
+    return new Shortcode({
+      tag: match[2],
+      attrs: match[3],
+      type: type,
       content: match[5]
-    });
+    })
   }
-};
-
+}
 
 /**
  * Shortcode Objects
@@ -239,42 +240,42 @@ wp.shortcode = {
  * indicating the `type` of the shortcode ('single', 'self-closing', or
  * 'closed'), and a `content` string.
  *
- * @class wp.shortcode
+ * @class Shortcode
  * @param options
  * @return {wp.shortcode}
  */
-wp.shortcode = _.extend( function( options ) {
-  _.extend( this, _.pick( options || {}, 'tag', 'attrs', 'type', 'content' ) );
+wp.shortcode = _.extend(function (options) {
+  _.extend(this, _.pick(options || {}, 'tag', 'attrs', 'type', 'content'))
 
-  var attrs = this.attrs;
+  var attrs = this.attrs
 
   // Ensure we have a correctly formatted `attrs` object.
   this.attrs = {
-    named:   {},
+    named: {},
     numeric: []
-  };
+  }
 
-  if ( ! attrs ) {
-    return;
+  if (!attrs) {
+    return
   }
 
   // Parse a string of attributes.
-  if ( _.isString( attrs ) ) {
-    this.attrs = wp.shortcode.attrs( attrs );
+  if (_.isString(attrs)) {
+    this.attrs = wp.shortcode.attrs(attrs)
 
-    // Identify a correctly formatted `attrs` object.
-  } else if ( _.isEqual( _.keys( attrs ), [ 'named', 'numeric' ] ) ) {
-    this.attrs = attrs;
+  // Identify a correctly formatted `attrs` object.
+  } else if (_.isEqual(_.keys(attrs), ['named', 'numeric'])) {
+    this.attrs = attrs
 
-    // Handle a flat object of attributes.
+  // Handle a flat object of attributes.
   } else {
-    _.each( options.attrs, function( value, key ) {
-      this.set( key, value );
-    }, this );
+    _.each(options.attrs, function (value, key) {
+      this.set(key, value)
+    }, this)
   }
-}, wp.shortcode );
+}, wp.shortcode)
 
-_.extend( wp.shortcode.prototype, {
+_.extend(wp.shortcode.prototype, {
   /**
    * Get a shortcode attribute
    *
@@ -284,8 +285,8 @@ _.extend( wp.shortcode.prototype, {
    * @param attr
    * @return {*}
    */
-  get: function( attr ) {
-    return this.attrs[ _.isNumber( attr ) ? 'numeric' : 'named' ][ attr ];
+  get: function (attr) {
+    return this.attrs[_.isNumber(attr) ? 'numeric' : 'named'][attr]
   },
 
   /**
@@ -298,9 +299,9 @@ _.extend( wp.shortcode.prototype, {
    * @param value
    * @return {wp.shortcode}
    */
-  set: function( attr, value ) {
-    this.attrs[ _.isNumber( attr ) ? 'numeric' : 'named' ][ attr ] = value;
-    return this;
+  set: function (attr, value) {
+    this.attrs[_.isNumber(attr) ? 'numeric' : 'named'][attr] = value
+    return this
   },
 
   /**
@@ -308,38 +309,38 @@ _.extend( wp.shortcode.prototype, {
    *
    * @return {string}
    */
-  string: function() {
-    var text    = '[' + this.tag;
+  string: function () {
+    var text = '[' + this.tag
 
-    _.each( this.attrs.numeric, function( value ) {
-      if ( /\s/.test( value ) ) {
-        text += ' "' + value + '"';
+    _.each(this.attrs.numeric, function (value) {
+      if (/\s/.test(value)) {
+        text += ' "' + value + '"'
       } else {
-        text += ' ' + value;
+        text += ' ' + value
       }
-    });
+    })
 
-    _.each( this.attrs.named, function( value, name ) {
-      text += ' ' + name + '="' + value + '"';
-    });
+    _.each(this.attrs.named, function (value, name) {
+      text += ' ' + name + '="' + value + '"'
+    })
 
     // If the tag is marked as `single` or `self-closing`, close the
     // tag and ignore any additional content.
-    if ( 'single' === this.type ) {
-      return text + ']';
-    } else if ( 'self-closing' === this.type ) {
-      return text + ' /]';
+    if (this.type === 'single') {
+      return text + ']'
+    } else if (this.type === 'self-closing') {
+      return text + ' /]'
     }
 
     // Complete the opening tag.
-    text += ']';
+    text += ']'
 
-    if ( this.content ) {
-      text += this.content;
+    if (this.content) {
+      text += this.content
     }
 
     // Add the closing tag.
-    return text + '[/' + this.tag + ']';
+    return text + '[/' + this.tag + ']'
   }
-});
-module.export = wp.shortcode;
+})
+module.export = Shortcode
