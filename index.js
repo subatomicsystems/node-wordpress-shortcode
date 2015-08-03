@@ -7,7 +7,8 @@
  * https://github.com/WordPress/WordPress/blob/master/wp-includes/js/shortcode.js
  *
  */
-var _ = require('lodash') // TODO: reduce this dep footprint
+var _            = require('lodash') // TODO: reduce this dep footprint
+var asyncReplace = require('async-replace')
 
 var Shortcode = {
   /**
@@ -75,24 +76,26 @@ var Shortcode = {
    *
    * @param tag
    * @param text
+   * @param replacer
    * @param callback
    * @return {*|string}
    */
-  replace: function (tag, text, callback) {
-    return text.replace(Shortcode.regexp(tag), function (match, left, tag, attrs, slash, content, closing, right) {
+  replace: function (tag, text, replacer, callback) {
+    return asyncReplace(text, Shortcode.regexp(tag), function (match, left, tag, attrs, slash, content, closing, right, offset, string, done) {
       // If both extra brackets exist, the shortcode has been
       // properly escaped.
       if (left === '[' && right === ']') {
         return match
       }
 
-      // Create the match object and pass it through the callback.
-      var result = callback(Shortcode.fromMatch(arguments))
+      // Create the match object and pass it through the replacer.
+      var result = replacer(Shortcode.fromMatch(arguments), done)
 
       // Make sure to return any of the extra brackets if they
       // weren't used to escape the shortcode.
-      return result ? left + result + right : match
-    })
+      result = result ? left + result + right : match
+
+    }, callback)
   },
 
   /**
